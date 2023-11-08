@@ -12,22 +12,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 
-def main():
-    st.title('여행지 기반 향수 추천 시스템')
-
-    # 사용자 입력 받기
-    query = st.text_input('여행지를 입력해주세요:')
-
-    if st.button('향수 추천 받기'):
-        df = chat_gpt(query)
-        # 전처리 함수 적용
-        df['input_pre'] = df['input'].apply(preprocess_text)
-        st.text(df['input'].iloc[0])
-        vectorizer, word2vec_model, kmeans_model, top3_perfumes_df = load_assets(df)  # load_assets는 df를 인자로 받아야 합니다.
-
-        # Get top 3 perfumes for the query
-        st.write(top3_perfumes_df)
-
 def chat_gpt(query):
     if not hasattr(chat_gpt, 'cnt'):
         chat_gpt.cnt = -1
@@ -36,12 +20,22 @@ def chat_gpt(query):
 
     chat_gpt.cnt += 1
 
-    # 이부분에서 openai.api_key는 안전한 위치에 저장하거나 환경변수에서 로드하도록 바꾸어야 합니다.
     # openai.api_key는 이 코드에서 직접 보여주면 안됩니다.
-    openai.api_key = 'OPENAI-YOUR-KEY'
+    openai.api_key = 'Your-API-KEY'
 
     # query를 custom_prompt에 포함하여 실제 여행지를 질의로 사용합니다.
-    custom_prompt = f"""Please provide an overview of {query} as a travel destination, touching upon its cultural, historical, and natural highlights. From the breathtaking views atop its landmarks to the bustling markets filled with the aroma of street foods, and the serene countryside with its fresh, floral air, capture the essence of {query} in detail. Alongside this, focus on the sensory experiences - the distinct smells that define the local atmosphere, such as the zesty tang of citrus in summer or the smoky warmth of chestnut vendors in the fall."""
+    custom_prompt = f"""Please provide an overview of {query} as a travel destination,
+         focusing on its most iconic and distinctive features. 
+         Highlight the unique aspects that make {query} a remarkable place to visit, 
+         such as famous landmarks, local products, or natural wonders. 
+         Describe the sensory experiences associated with these features, like the smells and tastes 
+         that a visitor might encounter, which capture the essence of {query}. 
+         From the signature cuisine to the natural scenery that leaves a lasting impression, 
+         detail the elements that define the local atmosphere of {query}.
+         For instance, if the destination is known for its lavender fields, 
+         mention the fragrance of lavender in the air and how it's a part of the local charm. 
+         Include any other olfactory experiences that are synonymous with the place, 
+         which could be used to identify perfumes that embody the essence of the destination."""
 
     response = openai.ChatCompletion.create(
         model='gpt-4-0314',
@@ -110,7 +104,7 @@ def preprocess_text(text):
     text = remove_commas(text)
     return text
 
-
+@st.cache_data
 def load_assets(df):
     # Load TF-IDF Vectorizer
     with open('./Data/tfidf_vectorizer.pkl', 'rb') as f:
@@ -194,8 +188,41 @@ def load_assets(df):
 
     return vectorizer, word2vec_model, kmeans_model, top3_perfumes_df
 
+#streamlit 구현
+def main():
+    st.title('여행지 기반 향수 추천 시스템')
+    st.write('여행지를 입력하면 해당 여행지와 어울리는 향수를 추천해 드립니다.')
+    # 사용자 입력 받기
+    query = st.text_input('여행지를 입력해주세요:')
 
+    if st.button('향수 추천 받기'):
+        with st.spinner("Loading..."):
+            df = chat_gpt(query)
+        df['input_pre'] = df['input'].apply(preprocess_text)
+        st.text(df['input'].iloc[0])
+        vectorizer, word2vec_model, kmeans_model, top3_perfumes_df = load_assets(df)
 
-# Main execution logic
+        # NaN 값을 '-'로 대체
+        top3_perfumes_df.fillna('-', inplace=True)
+        # Get top 3 perfumes for the query
+        display_perfume_cards(top3_perfumes_df)
+
+#향수 정보를 카드 형태로 표시
+def display_perfume_cards(df):
+    # 각 향수에 대한 카드를 생성하여 출력합니다.
+    for index, row in df.iterrows():
+        # displaying card 코드
+        cols = st.columns([2, 1, 5, 1])  # 5열, 컬럼의 너비 설정
+        # with cols[1]:
+        # st.image(row['Image_Link'], width=100)  # 이미지 링크 사용
+        with cols[0]:
+            st.subheader(row['perfume'])  # 향수 이름
+            # st.caption(row['brand'])  # 향수 브랜드
+        with cols[2]:
+            st.text(f"Top Note: {row['top notes']}")  # 탑노트
+            st.text(f"Middle Note: {row['middle notes']}")  # 미들노트
+            st.text(f"Base Note: {row['base notes']}")  # 베이스노트
+        st.markdown("---")  # 구분선 추가
+
 if __name__ == "__main__":
     main()
