@@ -38,7 +38,7 @@ def chat_gpt(query):
 
     # 이부분에서 openai.api_key는 안전한 위치에 저장하거나 환경변수에서 로드하도록 바꾸어야 합니다.
     # openai.api_key는 이 코드에서 직접 보여주면 안됩니다.
-    openai.api_key = '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'
+    openai.api_key = 'OPENAI-YOUR-KEY'
 
     # query를 custom_prompt에 포함하여 실제 여행지를 질의로 사용합니다.
     custom_prompt = f"""Please provide an overview of {query} as a travel destination, touching upon its cultural, historical, and natural highlights. From the breathtaking views atop its landmarks to the bustling markets filled with the aroma of street foods, and the serene countryside with its fresh, floral air, capture the essence of {query} in detail. Alongside this, focus on the sensory experiences - the distinct smells that define the local atmosphere, such as the zesty tang of citrus in summer or the smoky warmth of chestnut vendors in the fall."""
